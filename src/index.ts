@@ -1,4 +1,5 @@
 const MODEL = "@cf/meta/llama-3.2-3b-instruct";
+const GATEWAY_ID = "default";
 
 const SYSTEM_PROMPT = `You are Work AI, a helpful workplace assistant running on Cloudflare Workers AI.
 Help with work tasks such as writing emails, summarizing notes, brainstorming ideas, planning projects,
@@ -78,8 +79,17 @@ export default {
 					{ role: "user", content: message },
 				];
 
-				const response = await env.AI.run(MODEL, { messages });
-				return json({ reply: extractReply(response) });
+				const response = await env.AI.run(
+					MODEL,
+					{ messages },
+					{
+						gateway: {
+							id: GATEWAY_ID,
+							skipCache: true,
+						},
+					},
+				);
+				return json({ reply: extractReply(response), gateway: GATEWAY_ID });
 			} catch (error) {
 				const detail = error instanceof Error ? error.message : "Unknown error";
 				return json({ error: "Failed to generate a response.", detail }, 500);
@@ -87,7 +97,7 @@ export default {
 		}
 
 		if (url.pathname === "/api/health") {
-			return json({ ok: true, model: MODEL });
+			return json({ ok: true, model: MODEL, gateway: GATEWAY_ID });
 		}
 
 		return new Response("Not Found", { status: 404 });
